@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Lawyer {
+  id          String     @id @default(uuid())
+  name        String
+  role        String
+  oab         String     @unique
+  phoneNumber String
+  icon        String?
+  schedules   Schedule[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([oab], name: "lawyer_oab_idx")
+  @@index([name], name: "lawyer_name_idx")
+}
+
+model Room {
+  id                 String     @id @default(uuid())
+  number             Int        @unique
+  isAvailable        Boolean    @default(false)
+  hasAirConditioning Boolean    @default(false)
+  hasTV              Boolean    @default(false)
+  hasComputer        Boolean    @default(true)
+  capacity           Int        @default(1)
+  schedules          Schedule[]
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  @@index([number], name: "room_number_idx")
+}
+
+model Schedule {
+  id        String       @id @default(uuid())
+  date      DateTime
+  time      String
+  type      ScheduleType
+  confirmed Boolean      @default(false)
+  user      User         @relation(fields: [userId], references: [id])
+  userId    String
+  lawyer    Lawyer       @relation(fields: [lawyerId], references: [id])
+  lawyerId  String
+  room      Room         @relation(fields: [roomId], references: [id])
+  roomId    String
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([date], name: "schedule_date_idx")
+}
+
+model User {
+  id          String     @id @default(uuid())
+  name        String
+  password    String
+  iconProfile String
+  userName    String     @unique
+  role        UserRole
+  schedules   Schedule[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([userName], name: "user_userName_idx")
+}
+
+enum ScheduleType {
+  meeting
+  hearing
+}
+
+enum UserRole {
+  admin
+  user
+  intern
+}
