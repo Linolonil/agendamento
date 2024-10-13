@@ -50,6 +50,21 @@ export const getRoom = async ({number} : {number : string}) =>{
   return room
 };
 
+export const getRoomById = async ({roomId} : {roomId : string}) =>{
+
+  const room = await prisma.room.findFirst({
+    where: {
+      id: roomId
+    }
+  })
+
+  if(!room){
+    throw new Error(`Sala não existe`)
+  }
+
+  return room
+};
+
 export const getAllRoom = async () =>{
 
   const room = await prisma.room.findMany()
@@ -61,7 +76,6 @@ export const getAllRoom = async () =>{
 
   return room
 };
-
 
 export const updateRoom = async ({id, number, isAvailable, hasAirConditioning, hasTV, hasComputer, capacity }: Room & { id:string}) => {
 

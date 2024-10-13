@@ -3,6 +3,11 @@ export interface User {
     password: string;
     iconProfile?: string;
     userName: string;
-    role: "admin" | "user" | "intern";
+    role: role;
 }
 
+enum role{
+    "admin",
+    "user",
+    "intern"
+}

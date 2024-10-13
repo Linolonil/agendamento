@@ -56,7 +56,7 @@ model Schedule {
 
 model User {
   id          String     @id @default(uuid())
-  name        String
+  name        String     @unique
   password    String
   iconProfile String
   userName    String     @unique
@@ -64,8 +64,6 @@ model User {
   schedules   Schedule[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
-
-  @@index([userName], name: "user_userName_idx")
 }
 
 enum ScheduleType {

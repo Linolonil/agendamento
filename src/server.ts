@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import { authRoutes } from './routes/authRoutes';
 import { lawyerRoutes } from './routes/lawyerRoutes';
 import { roomRoutes } from './routes/roomRoutes';
+import { userRoutes } from './routes/userRoutes';
+import { scheduleRoutes } from './routes/scheduleRoutes';
 
 dotenv.config();
 
@@ -20,6 +22,8 @@ const start = async () => {
         app.register(authRoutes);
         app.register(lawyerRoutes);
         app.register(roomRoutes);
+        app.register(userRoutes)
+        app.register(scheduleRoutes)
 
         const port =  Number(process.env.PORT) || 3333;
         await app.listen({ port: port });
