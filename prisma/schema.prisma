@@ -10,7 +10,6 @@ datasource db {
 model Lawyer {
   id          String     @id @default(uuid())
   name        String
-  role        String
   oab         String     @unique
   phoneNumber String
   icon        String?

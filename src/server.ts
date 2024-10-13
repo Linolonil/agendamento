@@ -2,6 +2,8 @@ import fastify from 'fastify';
 import cors from '@fastify/cors';
 import dotenv from 'dotenv';
 import { authRoutes } from './routes/authRoutes';
+import { lawyerRoutes } from './routes/lawyerRoutes';
+import { roomRoutes } from './routes/roomRoutes';
 
 dotenv.config();
 
@@ -16,6 +18,8 @@ const start = async () => {
         await app.register(cors);
         
         app.register(authRoutes);
+        app.register(lawyerRoutes);
+        app.register(roomRoutes);
 
         const port =  Number(process.env.PORT) || 3333;
         await app.listen({ port: port });
