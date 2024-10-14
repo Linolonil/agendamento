@@ -46,6 +46,19 @@ export const getLawyersByOab = async ({ oab }: { oab: string }) => {
   return lawyers;
 };
 
+export const getLawyersByiD = async ({ id }: { id: string }) => {
+  const lawyers = await prisma.lawyer.findUnique({
+    where: {
+      id: id,
+    },
+  });
+
+  if (!lawyers) {
+    throw new Error("Erro ao buscar advogados");
+  }
+  return lawyers;
+};
+
 export const updateLawyers = async ({ id, name, oab, phoneNumber }: Lawyer & { id: string }) => {
   const lawyer = await prisma.lawyer.findFirst({
     where: {

@@ -1,22 +1,27 @@
+import { Schedule } from "@prisma/client";
 import prisma from "../models/prismaClient"; // ajuste o caminho conforme necessário
-import { Schedule } from "../types";
 
-export const createSchedule = async ({userId,lawyerId,roomId,date,time,type,confirmed = false, }: Schedule) => {
-
-  
-
+export const createSchedule = async (data: {
+  userId: string;
+  lawyerId: string;
+  roomId: string;
+  date: Date;
+  startTime: Date;
+  endTime: Date;
+  type: "meeting" | "hearing";
+  confirmed: boolean;
+}) => {
 
   const schedule = await prisma.schedule.create({
     data: {
-      userId,
-      lawyerId,
-      roomId,
-      date,
-      time,
-      type,
-      confirmed, 
+    ...data,
     },
   });
 
   return schedule;
+};
+
+export const getAllSchedules = async () => {
+  const schedules = await prisma.schedule.findMany();
+  return schedules;
 };

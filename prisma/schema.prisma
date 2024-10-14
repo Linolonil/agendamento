@@ -39,7 +39,8 @@ model Room {
 model Schedule {
   id        String       @id @default(uuid())
   date      DateTime
-  time      String
+  startTime DateTime
+  endTime   DateTime
   type      ScheduleType
   confirmed Boolean      @default(false)
   user      User         @relation(fields: [userId], references: [id])
@@ -52,6 +53,7 @@ model Schedule {
   updatedAt DateTime     @updatedAt
 
   @@index([date], name: "schedule_date_idx")
+  @@index([startTime, endTime], name: "schedule_time_idx")
 }
 
 model User {
