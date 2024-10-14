@@ -38,7 +38,7 @@ export const createSchedule = async (request: FastifyRequest, reply: FastifyRepl
       return reply.code(400).send({ message: "Data ou horário inválido." });
     }
 
-    const duration = type === "hearing" ? 3 * 60 * 60 * 1000 : 60 * 60 * 1000; 
+    const duration = type === "hearing" ? 3 * 60 * 60 * 1000 : 1 * 60 * 60 * 1000; 
     const endTime = new Date(parsedStartTime.getTime() + duration); 
 
     const isAvailable = await checkRoomAvailability(roomId, parsedDate, parsedStartTime, endTime);
