@@ -1,8 +1,8 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import * as authService from "../services/authService";
-import { User } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { generateAccessToken } from "../utils/jwt";
+import { User } from "../types";
 
 export const loginUser = async (request: FastifyRequest, reply: FastifyReply) => {
   const { userName, password, checkPassword } = request.body as {
@@ -10,20 +10,30 @@ export const loginUser = async (request: FastifyRequest, reply: FastifyReply) =>
     password: string;
     checkPassword: string;
   };
-  
+
+  // Verifique se os campos obrigatórios estão presentes
+  if (!userName || !password || !checkPassword) {
+    console.log("Campos obrigatórios não informados");
+    return reply.status(400).send({ message: "Campos obrigatórios não informados" });
+  }
+
+  // Verifique se as senhas conferem
   if (checkPassword !== password) {
-    return reply.status(401).send({ message: "As senhas são diferentes" });
+    console.log("As senhas não conferem");
+    return reply.status(401).send({ message: "As senhas não conferem" });
   }
 
   try {
+    // Tente fazer o login
     const { user, accessToken, refreshToken } = await authService.loginService(userName, password);
-
+    console.log("Usuário autenticado:", user);
     reply.status(200).send({ user, accessToken, refreshToken });
   } catch (error) {
+    console.error("Erro ao fazer login:", error); // Log do erro
     if ((error as Error).message === "Credenciais inválidas") {
       return reply.status(401).send({ message: (error as Error).message });
     }
-    reply.status(500).send({ message: "Erro interno do servidor" });
+    reply.status(500).send({ message: "Erro interno do servidor", error: (error as Error).message });
   }
 };
 
