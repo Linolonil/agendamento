@@ -1,63 +1,43 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import * as scheduleService from "../services/scheduleService";
-import * as roomService from "../services/roomService";
-import prisma from "../models/prismaClient";
-import { Schedule } from "@prisma/client";
-
-const checkRoomAvailability = async (roomId: string, date: Date, startTime: Date, endTime: Date) => {
-  const room = await roomService.getRoomById({ roomId });
-  if (!room || !room.isAvailable) {
-    throw new Error("Sala não disponível");
-  }
-
-  const conflictingSchedules = await prisma.schedule.findMany({
-    where: {
-      roomId: roomId,
-      date: new Date(date),
-      OR: [
-        { startTime: { gte: startTime, lt: endTime } }, // O novo agendamento começa durante um existente
-        { endTime: { gt: startTime, lt: endTime } },   // O novo agendamento termina enquanto um existente começa
-        { startTime: { lte: startTime }, endTime: { gte: endTime } }, // O novo agendamento cobre um existente
-      ]
-    }
-  });
-
-  return conflictingSchedules.length === 0;
-};
+import { GetSchedulesParams, Schedule } from "../types";
+import { checkRoomAvailability, validationCreateSchedule } from "../validators/validationsSchedule";
 
 export const createSchedule = async (request: FastifyRequest, reply: FastifyReply) => {
   try {
     const { userId, lawyerId, roomId, date, startTime, type, confirmed } = request.body as Schedule;
-
-    console.log(userId, lawyerId, roomId, date, startTime, type, confirmed);
-
-    const parsedDate = new Date(date); 
-    const parsedStartTime = new Date(startTime); 
-
-    if (isNaN(parsedDate.getTime()) || isNaN(parsedStartTime.getTime())) {
-      return reply.code(400).send({ message: "Data ou horário inválido." });
+    
+    // Validação dos campos
+    if(!userId || !lawyerId || !roomId || !date || !startTime || !type ) {
+      throw new Error("Campos obrigatórios ausentes");
     }
 
-    const duration = type === "hearing" ? 3 * 60 * 60 * 1000 : 1 * 60 * 60 * 1000; 
-    const endTime = new Date(parsedStartTime.getTime() + duration); 
+    const parsedDate: Date = new Date(date);
+    const dateObject: Date = new Date(startTime);
+    const validStartTime: number = dateObject.getUTCHours();
+    const dayOfWeek: number = dateObject.getUTCDay(); //(0 = domingo, 6 = sábado)
+    const duration: number = type === "hearing" ? 3 * 60 * 60 * 1000 : 1 * 60 * 60 * 1000;
+    const endTime: Date = new Date(dateObject.getTime() + duration);
+    // validação de data e hora
+    validationCreateSchedule(dateObject, dayOfWeek, validStartTime, parsedDate, endTime);
+    // verificação de disponibilidade da sala
+    const isAvailable = await checkRoomAvailability(roomId, parsedDate, dateObject, endTime);
 
-    const isAvailable = await checkRoomAvailability(roomId, parsedDate, parsedStartTime, endTime);
-
-    if (!isAvailable) { 
-      return reply.code(400).send({ message: "Sala não disponível para o horário solicitado." });
+    
+    if (!isAvailable) {
+      throw new Error("A sala não está disponível para esse horário");
     }
 
     const schedule = await scheduleService.createSchedule({
       userId,
       lawyerId,
       roomId,
-      date: parsedDate, 
-      startTime: parsedStartTime, 
-      endTime: endTime, 
+      date: parsedDate,
+      startTime: dateObject,
+      endTime: endTime,
       type,
       confirmed,
     });
-    
 
     return reply.code(201).send({ message: "Agendamento criado com sucesso!", schedule });
   } catch (error) {
@@ -65,11 +45,99 @@ export const createSchedule = async (request: FastifyRequest, reply: FastifyRepl
   }
 };
 
-export const getAllSchedules = async (request: FastifyRequest, reply: FastifyReply) => {
+export const getAllSchedules = async (request: FastifyRequest<{ Params: GetSchedulesParams }>, reply: FastifyReply) => {
   try {
-    const schedules = await scheduleService.getAllSchedules();
-    return reply.code(200).send(schedules); // Retornar 200 em vez de 201 para busca
+    const specificDateString = request.params.date; 
+    const specificDate = new Date(specificDateString);
+
+    if (isNaN(specificDate.getTime())) {
+      return reply.code(400).send({ error: 'Data inválida fornecida' });
+    }
+
+    const schedules = await scheduleService.getAllSchedules(specificDate);
+    return reply.code(200).send(schedules); 
   } catch (error) {
     return reply.code(500).send({ error: (error as Error).message }); // Usar 500 para erros de servidor
   }
 };
+
+export const getScheduleById = async (request: FastifyRequest, reply: FastifyReply) => {
+  try {
+    const { id } = request.params as { id: string };
+    const schedule = await scheduleService.getScheduleById(id);
+    return reply.code(200).send(schedule); 
+  } catch (error) {
+    return reply.code(500).send({ error: (error as Error).message }); // Usar 500 para erros de servidor
+  }
+};
+
+
+export const updateScheduleById = async (request: FastifyRequest, reply: FastifyReply) => {
+  try {
+    const { id } = request.params as { id: string };
+    const { userId, lawyerId, roomId, date, startTime, type, confirmed } = request.body as Schedule;
+
+    // Validação dos campos
+    if (!userId || !lawyerId || !roomId || !date || !startTime || !type) {
+      return reply.code(400).send({ error: "Campos obrigatórios ausentes" });
+    }
+
+    const parsedDate: Date = new Date(date);
+    const dateObject: Date = new Date(startTime);
+    const validStartTime: number = dateObject.getUTCHours();
+    const dayOfWeek: number = dateObject.getUTCDay(); // (0 = domingo, 6 = sábado)
+    const duration: number = type === "hearing" ? 3 * 60 * 60 * 1000 : 1 * 60 * 60 * 1000;
+    const endTime: Date = new Date(dateObject.getTime() + duration);
+
+    // Validação de data e hora
+    validationCreateSchedule(dateObject, dayOfWeek, validStartTime, parsedDate, endTime);
+
+    // Verificação de disponibilidade da sala
+    const isAvailable = await checkRoomAvailability(roomId, parsedDate, dateObject, endTime);
+    if (!isAvailable) {
+      return reply.code(400).send({ error: "A sala não está disponível para esse horário" });
+    }
+
+    // Atualizar o agendamento
+    const updatedSchedule = await scheduleService.updateScheduleById(id, {
+      userId,
+      lawyerId,
+      roomId,
+      date: parsedDate,
+      startTime: dateObject,
+      endTime: endTime,
+      type,
+      confirmed,
+    });
+
+    return reply.code(200).send({ message: "Agendamento atualizado com sucesso!", schedule: updatedSchedule });
+  } catch (error) {
+    return reply.code(500).send({ error: (error as Error).message });
+  }
+};
+
+export const confirmSchedule = async (request: FastifyRequest, reply: FastifyReply) => {
+  try {
+    const { id } = request.params as { id: string };
+    const schedule = await scheduleService.confirmSchedule(id);
+    return reply.code(200).send(schedule); 
+  } catch (error) {
+    return reply.code(500).send({ error: (error as Error).message }); // Usar 500 para erros de servidor
+  }
+};
+
+export const deleteScheduleById = async (request: FastifyRequest, reply: FastifyReply) => {
+  try {
+    const { id } = request.params as { id: string };
+    const schedule = await scheduleService.deleteScheduleById(id);
+    return reply.code(200).send(schedule); 
+  } catch (error) {
+    return reply.code(500).send({ error: (error as Error).message }); // Usar 500 para erros de servidor
+  }
+};
+
+
+
+
+
+
