@@ -9,5 +9,6 @@ export async function roomRoutes(fastify: FastifyInstance, options: FastifyPlugi
     fastify.get('/api/v1/room/getRoom/:number', roomController.getRoom);
     fastify.put('/api/v1/room/updateRoom/:id', roomController.updateRoom);
     fastify.delete('/api/v1/room/deleteRoom/:id', roomController.deleteRoom);
+    fastify.post('/api/v1/room/getAvailableRooms', roomController.getAvailableRooms);
 
 };

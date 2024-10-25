@@ -49,7 +49,7 @@ export const getAllSchedules = async (request: FastifyRequest<{ Params: GetSched
   try {
     const specificDateString = request.params.date; 
     const specificDate = new Date(specificDateString);
-
+console.log(specificDate)
     if (isNaN(specificDate.getTime())) {
       return reply.code(400).send({ error: 'Data inválida fornecida' });
     }

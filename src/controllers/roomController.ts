@@ -1,6 +1,7 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { Room} from "@prisma/client";
 import * as roomService from './../services/roomService';
+import { request } from "http";
 
 export const createRoom = async (request: FastifyRequest, reply: FastifyReply) => {
     const { number,isAvailable, hasAirConditioning, hasComputer, hasTV, capacity } = request.body as Room;
@@ -57,3 +58,16 @@ export const deleteRoom = async(request: FastifyRequest, reply: FastifyReply)=>{
 
     reply.code(200).send(room)
 }
+
+export const getAvailableRooms = async (request: FastifyRequest, reply: FastifyReply) => {
+    // Extraindo os dados do corpo da requisição
+    const { date } = request.body as { date: string};
+    console.log(date)
+
+
+    const roomAvailable = await roomService.getRoomAvailability({date})
+
+
+    // Envie a resposta com as salas disponíveis
+    reply.code(200).send(roomAvailable);
+};

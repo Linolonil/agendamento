@@ -21,6 +21,7 @@ export const loginService = async (userName: string, password: string) => {
   
     // Gera tokens
     const accessToken = generateAccessToken(user.id, user.userName, user.role);
+    console.log(accessToken)
     const refreshToken = generateRefreshToken(user.id);
     return { user, accessToken, refreshToken };
   };

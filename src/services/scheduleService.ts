@@ -24,7 +24,7 @@ export const createSchedule = async (data: {
 export const getAllSchedules = async (specificDate: Date) => {
   const startOfDay = new Date(specificDate.setUTCHours(0, 0, 0, 0)); 
   const endOfDay = new Date(specificDate.setUTCHours(23, 59, 59, 999)); 
-
+console.log(startOfDay, endOfDay)
   const schedules = await prisma.schedule.findMany({
     where: {
       date: {

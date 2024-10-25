@@ -1,26 +1,19 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import * as authService from "../services/authService";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import { generateAccessToken } from "../utils/jwt";
 import { User } from "../types";
 
 export const loginUser = async (request: FastifyRequest, reply: FastifyReply) => {
-  const { userName, password, checkPassword } = request.body as {
+  const { userName, password } = request.body as {
     userName: string;
     password: string;
-    checkPassword: string;
   };
 
   // Verifique se os campos obrigatórios estão presentes
-  if (!userName || !password || !checkPassword) {
+  if (!userName || !password ) {
     console.log("Campos obrigatórios não informados");
     return reply.status(400).send({ message: "Campos obrigatórios não informados" });
-  }
-
-  // Verifique se as senhas conferem
-  if (checkPassword !== password) {
-    console.log("As senhas não conferem");
-    return reply.status(401).send({ message: "As senhas não conferem" });
   }
 
   try {
@@ -75,5 +68,27 @@ export const registerUser = async (request: FastifyRequest, reply: FastifyReply)
     reply.code(201).send(user);
   } catch (error) {
     reply.code(400).send({ message: (error as Error).message });
+  }
+};
+
+export const verifyToken = async(request: FastifyRequest, reply: FastifyReply) => {
+  const token = request.headers.authorization?.split(" ")[1];
+  if (!token) {
+    return reply.status(401).send({ message: "Token não encontrado" });
+  }
+
+  console.log(token)
+
+  try {
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload & {
+      id: string;
+      userName: string;
+      role: string;
+    };
+
+    console.log(decodedToken);
+    return reply.code(200).send({ decodedToken });
+  } catch (error) {
+    return reply.status(403).send({ message: "Token inválido" });
   }
 };
