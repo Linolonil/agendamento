@@ -73,11 +73,11 @@ export const registerUser = async (request: FastifyRequest, reply: FastifyReply)
 
 export const verifyToken = async(request: FastifyRequest, reply: FastifyReply) => {
   const token = request.headers.authorization?.split(" ")[1];
+
+  console.log(token)
   if (!token) {
     return reply.status(401).send({ message: "Token não encontrado" });
   }
-
-  console.log(token)
 
   try {
     const decodedToken = jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload & {
@@ -86,9 +86,12 @@ export const verifyToken = async(request: FastifyRequest, reply: FastifyReply) =
       role: string;
     };
 
-    console.log(decodedToken);
-    return reply.code(200).send({ decodedToken });
+    
+    return reply.code(200).send({ valid:true, decoded:decodedToken });
   } catch (error) {
-    return reply.status(403).send({ message: "Token inválido" });
+    if ((error as Error).name === "TokenExpiredError") {
+      return reply.status(401).send({ valid: false, message: "Token expirado." });
+    }
+    return reply.status(401).send({valid:false, message: "Token inválido" });
   }
 };

@@ -69,5 +69,5 @@ export const getAvailableRooms = async (request: FastifyRequest, reply: FastifyR
 
 
     // Envie a resposta com as salas disponíveis
-    reply.code(200).send(roomAvailable);
+    reply.code(200).send({date,rooms: roomAvailable});
 };
